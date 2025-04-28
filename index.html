@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Quiz Builder</title>
+    <style>
+      :root {
+        --primary: #6054b9;
+        --primary-light: #8a7fd8;
+        --secondary: #429fcf;
+        --secondary-light: #92cff0;
+        --dark: #333;
+        --light: #f8f9fa;
+        --gray: #e9ecef;
+        --success: #a3e4d7;
+        --error: #f5b7b1;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: var(--dark);
+        background-color: var(--light);
+        padding: 0;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .tagline {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .card {
+        background-color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      h2 {
+        color: var(--primary);
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--secondary-light);
+        padding-bottom: 0.5rem;
+      }
+
+      .instructions-container {
+        margin-bottom: 2rem;
+      }
+
+      .instructions-list {
+        list-style-position: inside;
+        margin: 1rem 0;
+      }
+
+      .instructions-list li {
+        margin-bottom: 1rem;
+        position: relative;
+        padding-left: 1.5rem;
+      }
+
+      .instructions-list li::before {
+        content: "•";
+        color: var(--primary);
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+      }
+
+      .step-number {
+        font-weight: bold;
+        color: var(--primary);
+      }
+
+      #example-container {
+        position: relative;
+        background-color: var(--gray);
+        padding: 20px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 1.5rem 0;
+        border-left: 4px solid var(--secondary);
+      }
+
+      #copy-example {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: background-color 0.3s;
+      }
+
+      #copy-example:hover {
+        background-color: var(--primary-light);
+      }
+
+      #json-example {
+        margin-top: 20px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: monospace;
+        font-size: 14px;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-family: monospace;
+        resize: vertical;
+        margin-bottom: 1.5rem;
+        transition: border-color 0.3s;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--secondary);
+        box-shadow: 0 0 0 2px rgba(66, 159, 207, 0.2);
+      }
+
+      .btn {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .btn:hover {
+        background-color: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-centered {
+        display: block;
+        margin: 0 auto;
+      }
+
+      #quiz-container {
+        margin-top: 2rem;
+      }
+
+      .question-card {
+        display: none;
+        border: none;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        background-color: white;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        animation: fadeIn 0.5s;
+        position: relative; /* Add this to make it a containing block for absolute positioning */
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .question-number {
+        font-size: 0.9rem;
+        color: var(--secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .question-text {
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        color: var(--dark);
+      }
+
+      .options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .option-btn {
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        background-color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        display: flex;
+        align-items: center;
+      }
+
+      .option-btn:hover {
+        background-color: #f0f0f0;
+        border-color: #ccc;
+      }
+
+      .option-btn:disabled {
+        cursor: default;
+      }
+
+      .option-btn::before {
+        content: "";
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+        margin-right: 12px;
+        transition: all 0.2s;
+      }
+
+      .option-btn.correct {
+        background-color: var(--success);
+        border-color: #69c796;
+      }
+
+      .option-btn.correct::before {
+        background-color: #69c796;
+        border-color: #69c796;
+      }
+
+      .option-btn.wrong {
+        background-color: var(--error);
+        border-color: #e74c3c;
+      }
+
+      .option-btn.wrong::before {
+        background-color: #e74c3c;
+        border-color: #e74c3c;
+      }
+
+      #next-btn {
+        position: absolute; /* Position it relative to the question card */
+        top: 10px;
+        right: 0;
+        margin: 10px;
+      }
+      #reasoning {
+        margin-top: 1.5rem;
+        padding: 15px;
+        background-color: rgba(66, 159, 207, 0.1);
+        border-left: 4px solid var(--secondary);
+        border-radius: 4px;
+        font-style: italic;
+      }
+
+      #result {
+        text-align: center;
+        font-size: 1.8rem;
+        margin: 2rem 0;
+        color: var(--primary);
+        font-weight: bold;
+      }
+
+      .score-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        margin: 2rem 0;
+      }
+
+      .score-circle {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(
+          135deg,
+          var(--primary-light),
+          var(--primary)
+        );
+        color: white;
+        box-shadow: 0 4px 15px rgba(96, 84, 185, 0.3);
+      }
+
+      .score-number {
+        font-size: 3rem;
+        font-weight: bold;
+        line-height: 1;
+      }
+
+      .score-text {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .divider {
+        margin: 2rem 0;
+        border: 0;
+        height: 1px;
+        background-image: linear-gradient(
+          to right,
+          rgba(0, 0, 0, 0),
+          rgba(0, 0, 0, 0.1),
+          rgba(0, 0, 0, 0)
+        );
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 15px;
+        }
+
+        header {
+          padding: 1.5rem 0;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .card {
+          padding: 1.5rem;
+        }
+
+        .question-text {
+          font-size: 1.2rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Interactive Quiz Builder</h1>
+      <p class="tagline">Create, share, and take custom quizzes in minutes</p>
+    </header>
+
+    <div class="container">
+      <div id="instructions" class="card instructions-container">
+        <h2>How to Use</h2>
+        <p>
+          Generate customized quiz questions based on your study material in
+          just a few simple steps:
+        </p>
+
+        <ol class="instructions-list">
+          <li>
+            <span class="step-number">Step 1:</span> Upload your study material
+            or topic description into your preferred AI tool (like ChatGPT,
+            Claude, or any text-based AI assistant).
+          </li>
+          <li>
+            <span class="step-number">Step 2:</span> Ask the AI to generate quiz
+            questions based on your material using the prompt below:
+          </li>
+        </ol>
+
+        <div id="example-container">
+          <button id="copy-example">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z"
+                fill="currentColor"
+              ></path>
+            </svg>
+            Copy
+          </button>
+          <pre id="json-example">
+Based on the material I uploaded, generate 15 objective quiz questions and answers. Make sure that questions are challenging and answers aren't too obvious.
+Generate it in the following JSON format:
+
+[
+  {
+    "question": "What is the capital of France?",
+    "options": ["Paris", "Rome", "Berlin", "Madrid"],
+    "answer": 0,
+    "reasoning": "Paris is the capital city of France."
+  },
+  {
+    "question": "Which planet is known as the Red Planet?",
+    "options": ["Earth", "Venus", "Mars", "Jupiter"],
+    "answer": 2,
+    "reasoning": "Mars is known as the Red Planet because of its reddish appearance."
+  }
+]
+</pre
+          >
+        </div>
+
+        <ol class="instructions-list" start="3">
+          <li>
+            <span class="step-number">Step 3:</span> Copy the JSON formatted
+            output from the AI and paste it into the text area below.
+          </li>
+          <li>
+            <span class="step-number">Step 4:</span> Click "Start Quiz" to begin
+            testing your knowledge!
+          </li>
+        </ol>
+
+        <p>
+          You can also modify the JSON output manually if needed, but be sure to
+          maintain the correct format.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Create Your Quiz</h2>
+        <textarea
+          id="json-input"
+          placeholder="Paste your quiz JSON here..."
+        ></textarea>
+        <button id="start-btn" class="btn btn-centered">Start Quiz</button>
+      </div>
+
+      <div id="quiz-container"></div>
+      <div id="result"></div>
+    </div>
+
+    <script>
+      let quizData = [];
+      let currentQuestion = 0;
+      let score = 0;
+      let totalQuestions = 0;
+
+      document.getElementById("copy-example").addEventListener("click", () => {
+        const exampleText = document.getElementById("json-example").innerText;
+        navigator.clipboard.writeText(exampleText).then(() => {
+          const button = document.getElementById("copy-example");
+          const originalContent = button.innerHTML;
+
+          // Change button text to "Copied"
+          button.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"></path>
+          </svg> Copied!`;
+
+          // Set timer to change back
+          setTimeout(() => {
+            button.innerHTML = originalContent;
+          }, 2000);
+        });
+      });
+
+      document.getElementById("start-btn").addEventListener("click", () => {
+        const input = document.getElementById("json-input").value;
+        try {
+          quizData = JSON.parse(input);
+          if (!Array.isArray(quizData)) {
+            throw new Error("JSON must be an array of questions.");
+          }
+
+          currentQuestion = 0;
+          score = 0;
+          totalQuestions = quizData.length;
+
+          document.getElementById("json-input").closest(".card").style.display =
+            "none";
+          document.getElementById("instructions").style.display = "none";
+          document.getElementById("result").innerHTML = "";
+
+          renderQuestion();
+        } catch (e) {
+          alert("Invalid JSON format: " + e.message);
+        }
+      });
+
+      function renderQuestion() {
+        const container = document.getElementById("quiz-container");
+        container.innerHTML = "";
+
+        if (currentQuestion < quizData.length) {
+          const q = quizData[currentQuestion];
+          const card = document.createElement("div");
+          card.className = "question-card";
+          card.style.display = "block";
+
+          // Add question number display
+          const questionNumber = document.createElement("div");
+          questionNumber.className = "question-number";
+          questionNumber.textContent = `Question ${
+            currentQuestion + 1
+          } of ${totalQuestions}`;
+          card.appendChild(questionNumber);
+
+          // Question text
+          const questionText = document.createElement("h3");
+          questionText.className = "question-text";
+          questionText.textContent = q.question;
+          card.appendChild(questionText);
+
+          // Options
+          const optionsDiv = document.createElement("div");
+          optionsDiv.className = "options";
+
+          q.options.forEach((opt, index) => {
+            const button = document.createElement("button");
+            button.className = "option-btn";
+            button.textContent = opt;
+            button.onclick = () => handleAnswer(index, q, button);
+            optionsDiv.appendChild(button);
+          });
+
+          card.appendChild(optionsDiv);
+          container.appendChild(card);
+        } else {
+          showResult();
+        }
+      }
+
+      function handleAnswer(selectedIndex, questionObj, selectedButton) {
+        const card = selectedButton.closest(".question-card");
+        const buttons = card.querySelectorAll(".option-btn");
+
+        const correctIndex = questionObj.answer;
+
+        buttons.forEach((btn, idx) => {
+          btn.disabled = true;
+          if (idx === correctIndex) btn.classList.add("correct");
+          if (idx === selectedIndex && idx !== correctIndex)
+            btn.classList.add("wrong");
+        });
+
+        if (selectedIndex === correctIndex) {
+          score++;
+        }
+
+        if (questionObj.reasoning) {
+          const reasoningText = document.createElement("div");
+          reasoningText.id = "reasoning";
+          reasoningText.innerHTML =
+            "<strong>Explanation:</strong> " + questionObj.reasoning;
+          card.appendChild(reasoningText);
+        }
+
+        const nextBtn = document.createElement("button");
+        nextBtn.id = "next-btn";
+        nextBtn.className = "btn btn-centered";
+        nextBtn.textContent =
+          currentQuestion < quizData.length - 1
+            ? "Next Question"
+            : "See Results";
+        nextBtn.onclick = () => {
+          currentQuestion++;
+          renderQuestion();
+        };
+        card.appendChild(nextBtn);
+      }
+
+      function showResult() {
+        const container = document.getElementById("quiz-container");
+        container.innerHTML = "";
+
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
+
+        // Create result card
+        const resultCard = document.createElement("div");
+        resultCard.className = "card";
+
+        // Add heading
+        const resultHeading = document.createElement("h2");
+        resultHeading.textContent = "Quiz Complete!";
+        resultCard.appendChild(resultHeading);
+
+        // Calculate percentage
+        const percentage = Math.round((score / totalQuestions) * 100);
+        const resultMessage = document.createElement("p");
+        resultMessage.style.textAlign = "center";
+        resultMessage.style.marginTop = "1rem";
+
+        // Add score circle
+        const scoreContainer = document.createElement("div");
+        scoreContainer.className = "score-container";
+
+        const scoreCircle = document.createElement("div");
+        scoreCircle.className = "score-circle";
+
+        const scoreNumber = document.createElement("div");
+        scoreNumber.className = "score-number";
+        scoreNumber.textContent = percentage + "%";
+
+        const scoreText = document.createElement("div");
+        scoreText.className = "score-text";
+        scoreText.textContent = `out of ${totalQuestions} questions`;
+
+        scoreCircle.appendChild(scoreNumber);
+        scoreCircle.appendChild(scoreText);
+        scoreContainer.appendChild(scoreCircle);
+        resultCard.appendChild(scoreContainer);
+
+        if (percentage >= 80) {
+          resultMessage.textContent =
+            "Excellent work! You've mastered this topic.";
+        } else if (percentage >= 60) {
+          resultMessage.textContent =
+            "Good job! You have a solid understanding of the material.";
+        } else {
+          resultMessage.textContent =
+            "Keep practicing! You're making progress.";
+        }
+
+        resultCard.appendChild(resultMessage);
+
+        // Add restart button
+        const divider = document.createElement("hr");
+        divider.className = "divider";
+        resultCard.appendChild(divider);
+
+        const restartBtn = document.createElement("button");
+        restartBtn.className = "btn btn-centered";
+        restartBtn.textContent = "Create Another Quiz";
+        restartBtn.onclick = () => {
+          document.getElementById("json-input").closest(".card").style.display =
+            "block";
+          document.getElementById("instructions").style.display = "block";
+          document.getElementById("result").innerHTML = "";
+          document.getElementById("json-input").value = "";
+        };
+        resultCard.appendChild(restartBtn);
+
+        resultDiv.appendChild(resultCard);
+      }
+    </script>
+  </body>
+</html>
